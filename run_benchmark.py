@@ -53,24 +53,27 @@ class Test:
         time = ''
         max_mem = ''
         started, ended = False, False
+        bvh_time = ''
 
         for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
             tokens = line.split('|')
             if not len(tokens) > 1:
                 continue
 
-            if started and "Time:" in tokens[1]:
+            if "Time:" in tokens[1]:
                 time = tokens[1].split('Time:')[1]
 
             if not started and 'Remaining' in tokens[2]:
                 started = True
+                bvh_time = time
             elif started and not ended and 'Remaining' not in tokens[2]:
                 ended = True
                 max_mem = tokens[2].split(':')[2]
         print('Done rendering', self.blend_file)
         return {'Test Name':self.name,
                 'Render Time': time,
-                'Peak Memory': max_mem}
+                'Peak Memory': max_mem,
+                'BVH Time': bvh_time}
 
 
 # rendering backends
@@ -80,10 +83,12 @@ ACCEPTED_BACKENDS = ('OPENCL', 'CPU', 'RPR', 'OPTIX', 'CUDA')
 # list of tests to do
 TESTS = [
     Test('BMW', 'https://download.blender.org/demo/test/BMW27_2.blend.zip', 'bmw27/bmw27_gpu.blend', 1, {}, []),
+    Test('Classroom', 'https://download.blender.org/demo/test/classroom.zip', 'classroom/classroom.blend', 1, {}, []),
+    Test('Pavillion', 'https://download.blender.org/demo/test/pabellon_barcelona_v1.scene_.zip', 'pabellon_barcelona_v1.scene_/3d/pavillon_barcelone_v1.2.blend', 1, {}, []),
 ]
 
 
-RESULT_COLUMNS = ['Test Name', 'Render Time', 'Peak Memory']
+RESULT_COLUMNS = ['Test Name', 'Render Time', 'Peak Memory', 'BVH Time']
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
