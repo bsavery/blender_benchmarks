@@ -25,7 +25,7 @@ class Test:
     command_options: list
 
     def get_archive(self):
-        if os.path.exists(self.name):
+        if os.path.exists(os.path.join('scenes', self.name)):
             print('Archive', self.name, 'Exists already')
         else:
             print('Getting archive', self.name, self.archive_url)
@@ -35,14 +35,14 @@ class Test:
             print('Extracted to', self.name)
             os.remove("archive.zip")
 
-    def run_test(self, blender_exe, render_backend, device_options=[]):
+    def run_test(self, blender_exe, render_backend, tile_size=64, device_options=[]):
         blend_file = os.path.join('scenes', self.name, self.blend_file)
         renderer = render_backend if render_backend == 'RPR' else 'CYCLES'
         set_backend = None
         if renderer == 'CYCLES':
-            set_backend = f"import bpy; bpy.context.preferences.addons['CYCLES'].preferences.compute_device_type = {render_backend}"
+            set_backend = f"import bpy; bpy.context.preferences.addons['CYCLES'].preferences.compute_device_type = {render_backend}; bpy.context.scene.render.tile_x = {tile_size}; bpy.context.scene.render.tile_y = {tile_size};"
 
-        cmd = [blender_exe, '-b', blend_file, '-E', 'CYCLES', '-f', str(self.frame_num)] 
+        cmd = [blender_exe, '-b', blend_file, '-E', renderer, '-f', str(self.frame_num)] 
         if set_backend:
             cmd += ['--python-expr', set_backend]
         cmd += self.command_options
@@ -95,6 +95,7 @@ if __name__ == "__main__":
     parser.add_argument('blender_exe', help="Path to blender executable")
     parser.add_argument('-backend', metavar='-b', default='OpenCL', choices=ACCEPTED_BACKENDS, help="Rendering backend to use, choices " + str(ACCEPTED_BACKENDS))
     parser.add_argument('-gpu_statees', metavar='-gpus', default='1', help='Comma separated list of devices to use.  CPU is 0')
+    parser.add_argument('-tile_size', default=64, help="Tile size for Cycles renders")
     parser.add_argument('output', help='Output CSV file')
     args = parser.parse_args()
 
@@ -103,4 +104,4 @@ if __name__ == "__main__":
         writer.writeheader()
         for test in TESTS:
             test.get_archive()
-            writer.writerow(test.run_test(args.blender_exe, args.backend))
+            writer.writerow(test.run_test(args.blender_exe, args.backend, args.tile_size))
